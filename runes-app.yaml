@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'runes serverless stack'
+Resources: 
+  LambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: "runes_api_lambda"
+      Handler: runes_api_lambda.lambda_handler
+      Runtime: python3.9
+      Code:
+        S3Bucket: runes-app-lambda
+        S3Key: 'runes_api_lambda.zip'
+      Description: "get rune data from dynamodb"
+      MemorySize: 128
+      Timeout: 100
+      Role: !GetAtt LambdaRole.Arn
+  LambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement: 
+        - Effect: "Allow"
+          Principal:
+            Service:
+            - "lambda.amazonaws.com"
+          Action:
+          - "sts:AssumeRole"
+      Path: "/"
+      #ManagedPolicyArns:
+      #- arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  LambdaPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: runes-lambda-policy
+      Roles:
+      - Ref: "LambdaRole"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - 
+         Action:
+          - "dynamodb:*"
+         Effect: Allow
+         Resource: "*"
+  DynamoDbRuneTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - AttributeName: "runeName"
+          AttributeType: "S" 
+      KeySchema: 
+        - 
+         AttributeName: "runeName"
+         KeyType: "HASH"
+      TableName: "rune_table"
+  DynamoDbRuneNameTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - AttributeName: "RuneId"
+          AttributeType: "N"
+        -
+          AttributeName: "RuneName"
+          AttributeType: "S"
+      KeySchema: 
+        - 
+         AttributeName: "RuneId"
+         KeyType: "HASH"
+        - 
+         AttributeName: "RuneName"
+         KeyType: "RANGE"
+      TableName: "rune_names"
+
+  DynamoDbRuneDescriptionTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      BillingMode: "PAY_PER_REQUEST"
+      AttributeDefinitions:
+        - AttributeName: "RuneId"
+          AttributeType: "N" 
+        -
+          AttributeName: "RuneDescription"
+          AttributeType: "S" 
+      KeySchema: 
+        -   
+         AttributeName: "RuneId"
+         KeyType: "HASH"
+        - 
+         AttributeName: "RuneDescription"
+         KeyType: "RANGE"
+      TableName: "rune_descriptions"
+#  PermissionForApiGatewayToInvokeLambda:
+#    Type: AWS::Lambda::Permission
+#    Properties:
+#      FunctionName: !Ref "LambdaFunction"
+#      Action: "lambda:InvokeFunction"
+#      Principal:
+#      SourceArn:
+#       Fn::GetAtt:
+#         - "ApiGateway"
+#         - "Arn"
+#  ApiGateway:
+#   Type: "AWS::ApiGatewayV2::Api"
+#   Properties:
+#     Name: runes lambda proxy
+#     Description: Lambda proxy for runes subdomain
+#     ProtocolType: HTTP
+#     Target: !GetAtt LambdaFunction.arn

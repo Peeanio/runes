@@ -1,0 +1,66 @@
+Resources:
+   devVpc:
+      Type: AWS::EC2::VPC
+      Properties:
+         CidrBlock: 
+            Ref: VpcPubSubnet
+         EnableDnsSupport: 'true'
+         EnableDnsHostnames: 'true'
+         Tags:
+            - Key: stack
+              Value: dev
+            - Key: Name
+              Value: devVpc
+
+   devVpcPubSubnet:
+      Type: AWS::EC2::Subnet
+      Properties: 
+        CidrBlock: 
+         Ref: VpcPubSubnet
+        MapPublicIpOnLaunch: 'false'
+        VpcId: !GetAtt devVpc.VpcId
+        Tags: 
+          - Key: stack
+            Value: dev
+          - Key: Name
+            Value: devVpcPubSubnet
+   devVpcInternetGateway:
+      Type: AWS::EC2::InternetGateway
+      Properties:
+         Tags:
+         - Key: stack
+           Value: dev
+         - Key: Name
+           Value: devVpcInternetGateway
+   devVpcIgwAttachment:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+         InternetGatewayId: !GetAtt devVpcInternetGateway.InternetGatewayId
+         VpcId: !GetAtt devVpc.VpcId
+   devVpcRouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties: 
+         VpcId: !GetAtt devVpc.VpcId
+         Tags: 
+            - Key: stack
+              Value: dev
+   devVpcInternetRoute:
+      Type: AWS::EC2::Route
+      DependsOn:
+         - devVpcInternetGateway
+         - devVpcIgwAttachment
+      Properties:
+         DestinationCidrBlock: 0.0.0.0/0
+         GatewayId: !GetAtt devVpcInternetGateway.InternetGatewayId
+         RouteTableId:  !GetAtt devVpcRouteTable.RouteTableId
+
+        
+Parameters:
+   VpcCidrBlock:
+      Type: String
+      Default: 10.101.0.0/16
+      Description: Enter the cidr, default 10.101.0.0/16
+   VpcPubSubnet:
+      Type: String
+      Default: 10.101.1.0/25
+      Description: Enter the Cidr for the public subnet, default 10.101.1.0/25
