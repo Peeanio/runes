@@ -1,5 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'runes serverless stack'
+Parameters:
+  ApiPath:
+    Description: Path after the api gateway for rune
+    Type: String
+    Default: "/api/v1/rune"
+
 Resources: 
   LambdaFunction:
     Type: 'AWS::Lambda::Function'
@@ -56,16 +62,21 @@ Resources:
          KeyType: "HASH"
       TableName: "rune_table"
 
-#  PermissionForApiGatewayToInvokeLambda:
-#    Type: AWS::Lambda::Permission
-#    Properties:
-#      FunctionName: !Ref "LambdaFunction"
-#      Action: "lambda:InvokeFunction"
-#      Principal:
-#      SourceArn:
-#       Fn::GetAtt:
-#         - "ApiGateway"
-#         - "Arn"
+  PermissionForApiGatewayToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: "lambda:InvokeFunction"
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join
+      - ""
+      - - "arn:aws:execute-api:"
+        - !Ref "AWS::Region"
+        - ":"
+        - !Ref "AWS::AccountId"
+        - ":"
+        - !Ref ApiGateway 
+        - "/*/*/api/v1/rune"
   ApiGateway:
    Type: "AWS::ApiGatewayV2::Api"
    Properties:
@@ -100,3 +111,24 @@ Resources:
       - /
       - - integrations
         - !Ref ApiGatewayIntegration
+  ApiGatewayStage:
+    Type: "AWS::ApiGatewayV2::Stage"
+    Properties:
+      ApiId: !Ref ApiGateway
+      StageName: "$default"
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 100
+        ThrottlingBurstLimit: 100
+  StaticS3Storage:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: runes-static-website
+
+Outputs: 
+  ApiUri:
+    Description: "Path of the api endpoint"
+    Value: !GetAtt ApiGateway.ApiEndpoint
+  WebAddress:
+    Description: "Where the web page lives in s3"
+    Value: !Ref StaticS3Storage
