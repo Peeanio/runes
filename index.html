@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Runes</title>
+    <style>
+      .rune {
+      border: 5px outset grey;
+      background-color: lightblue;
+      text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <script>async function get_rune() {
+       let rune_raw = await fetch('https://fauil7tm2d.execute-api.us-west-2.amazonaws.com/api/v1/rune');
+       let rune_string = await rune_raw.text();
+       let rune_json = await JSON.parse(rune_string);
+       let data = document.getElementById("rune_data");
+       var div = document.createElement("div");
+       div.innerHTML = rune_json.englishName.S;
+       data.appendChild(div);
+       }
+    async function three_runes(){
+       for (let number=0; number <=2; number += 1){
+         get_rune()
+       }
+    }
+    </script>
+    <h1>Homepage</h1>
+    <p>Get started with Nordic runes!</p>
+    <button onclick="get_rune()">Get rune</button>
+    <button onclick="three_runes()">Get three runes</button>
+    <p>Your runes:</p>
+    <div class=rune id=rune_data></div>
+  </body>
+</html>

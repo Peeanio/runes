@@ -48,50 +48,14 @@ Resources:
     Properties:
       BillingMode: "PAY_PER_REQUEST"
       AttributeDefinitions:
-        - AttributeName: "runeName"
-          AttributeType: "S" 
+        - AttributeName: "runeId"
+          AttributeType: "N" 
       KeySchema: 
         - 
-         AttributeName: "runeName"
+         AttributeName: "runeId"
          KeyType: "HASH"
       TableName: "rune_table"
-  DynamoDbRuneNameTable:
-    Type: "AWS::DynamoDB::Table"
-    Properties:
-      BillingMode: "PAY_PER_REQUEST"
-      AttributeDefinitions:
-        - AttributeName: "RuneId"
-          AttributeType: "N"
-        -
-          AttributeName: "RuneName"
-          AttributeType: "S"
-      KeySchema: 
-        - 
-         AttributeName: "RuneId"
-         KeyType: "HASH"
-        - 
-         AttributeName: "RuneName"
-         KeyType: "RANGE"
-      TableName: "rune_names"
 
-  DynamoDbRuneDescriptionTable:
-    Type: "AWS::DynamoDB::Table"
-    Properties:
-      BillingMode: "PAY_PER_REQUEST"
-      AttributeDefinitions:
-        - AttributeName: "RuneId"
-          AttributeType: "N" 
-        -
-          AttributeName: "RuneDescription"
-          AttributeType: "S" 
-      KeySchema: 
-        -   
-         AttributeName: "RuneId"
-         KeyType: "HASH"
-        - 
-         AttributeName: "RuneDescription"
-         KeyType: "RANGE"
-      TableName: "rune_descriptions"
 #  PermissionForApiGatewayToInvokeLambda:
 #    Type: AWS::Lambda::Permission
 #    Properties:
@@ -102,10 +66,37 @@ Resources:
 #       Fn::GetAtt:
 #         - "ApiGateway"
 #         - "Arn"
-#  ApiGateway:
-#   Type: "AWS::ApiGatewayV2::Api"
-#   Properties:
-#     Name: runes lambda proxy
-#     Description: Lambda proxy for runes subdomain
-#     ProtocolType: HTTP
-#     Target: !GetAtt LambdaFunction.arn
+  ApiGateway:
+   Type: "AWS::ApiGatewayV2::Api"
+   Properties:
+     Name: runes
+     Description: REST api for runes application
+     ProtocolType: HTTP
+     CorsConfiguration: 
+       AllowOrigins:
+         - '*'
+  ApiGatewayIntegration:
+    Type: "AWS::ApiGatewayV2::Integration"
+    Properties:
+      ApiId: !Ref ApiGateway
+      IntegrationType: AWS_PROXY
+      PayloadFormatVersion: '2.0'
+      IntegrationMethod: 'POST'
+      IntegrationUri: !Join
+      - ''
+      - - 'arn:'
+        - !Ref 'AWS::Partition'
+        - ':apigateway:'
+        - !Ref 'AWS::Region'
+        - ':lambda:path/2015-03-31/functions/'
+        - !GetAtt LambdaFunction.Arn
+        - /invocations 
+  ApiGatewayRoute:
+    Type: "AWS::ApiGatewayV2::Route"
+    Properties:
+      ApiId: !Ref ApiGateway
+      RouteKey: 'GET /api/v1/rune'
+      Target: !Join
+      - /
+      - - integrations
+        - !Ref ApiGatewayIntegration
