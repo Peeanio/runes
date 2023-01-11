@@ -124,11 +124,35 @@ Resources:
     Type: "AWS::S3::Bucket"
     Properties:
       BucketName: runes-static-website
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  StaticHostingPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref StaticS3Storage
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Action: 
+          - 's3:GetObject'
+          Effect: Allow
+          Resource: !Join
+            - ""
+            - - "arn:aws:s3:::"
+              - !Ref StaticS3Storage
+              - /*
+          Principal: '*'
 
 Outputs: 
   ApiUri:
     Description: "Path of the api endpoint"
     Value: !GetAtt ApiGateway.ApiEndpoint
+    Export:
+     Name: ApiUri
   WebAddress:
     Description: "Where the web page lives in s3"
     Value: !Ref StaticS3Storage
+    Export:
+     Name: WebAddress

@@ -12,7 +12,7 @@
   </head>
   <body>
     <script>async function get_rune() {
-       let rune_raw = await fetch('https://fauil7tm2d.execute-api.us-west-2.amazonaws.com/api/v1/rune');
+       let rune_raw = await fetch("${api_uri}/api/v1/rune");
        let rune_string = await rune_raw.text();
        let rune_json = await JSON.parse(rune_string);
        let data = document.getElementById("rune_data");
